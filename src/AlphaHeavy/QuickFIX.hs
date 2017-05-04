@@ -4,6 +4,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ExplicitForAll, ScopedTypeVariables #-}
 
 module AlphaHeavy.QuickFIX
   ( QuickFIX
@@ -77,7 +78,7 @@ createQuickFIXEngine createFunction configPath sender target = do
     halt <- newEmptyTMVar
     mgmt <- newTChan
     status <- newTVar EngineStopped
-    sessions <- newTVar Map.empty
+    sessions <- newTVar (Map.empty :: Map SessionID SessionState)
     return $ ConduitApp recv halt mgmt status sessions
 
   let initEngine = do
@@ -121,7 +122,7 @@ createQuickFIXEngine createFunction configPath sender target = do
   return (app, sourceQuickFIX app, sinkQuickFIX releaseKey conduitAppSessions sender target)
 
 sourceQuickFIX
-  :: (Generic a, GRecvMessage (Rep a), MonadIO m)
+  :: forall a m . (Generic a, GRecvMessage (Rep a), MonadIO m)
   => ConduitApp
   -> Producer m a
 sourceQuickFIX ConduitApp{conduitAppRecv, conduitAppStatus} = step where
@@ -140,7 +141,7 @@ sourceQuickFIX ConduitApp{conduitAppRecv, conduitAppStatus} = step where
         -- done by passing a future for the exception along with the message pointer
         mmsg <- liftIO $ catch
           (receiveMessage val >>= \ !msg -> future Nothing >> return (Just msg))
-          (\ ex -> future (Just ex) >> return Nothing)
+          (\ ex -> future (Just ex) >> return (Nothing :: Maybe a))
         case mmsg of
           Just msg -> yield msg
           Nothing  -> return ()
