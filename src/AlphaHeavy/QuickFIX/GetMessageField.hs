@@ -4,7 +4,7 @@
 
 module AlphaHeavy.QuickFIX.GetMessageField where
 
-import Control.Applicative
+import Control.Applicative ()
 import Control.Exception (throwIO)
 import Data.ByteString (ByteString)
 import Data.Int
